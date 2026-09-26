@@ -33,8 +33,16 @@ sbatch scripts/sbatch_clip.sh W99_test $PWD/prompts/foo.txt --image $PWD/frames/
 scripts/submit_jobs.sh my_jobs.txt            # add --hold to queue without starting
 ```
 
-- Each job gets 1 GPU (seen as device 0), 16 CPUs, 110 GB RAM and a 2 h limit.
-  Two clips run at once and the rest wait in order.
+- Each job requests 1 GPU (seen as device 0), **1 CPU**, **64 GB RAM** and a
+  2 h limit. Two clips run at once and the rest wait in order.
+- **Request only what the job needs.** The node is shared (60 CPUs, 236 GB
+  RAM). Measured for one 14B clip: about 1.1 cores busy, RAM peaks at 58.4 GB
+  while loading the model, then about 2 GB. Don't raise `--cpus-per-task` or
+  `--mem` without a measured reason. (Slurm reserves whole cores, so 1 CPU
+  shows as `cpu=2` in `scontrol`; that's the minimum.) Check a running job with
+  `cat /sys/fs/cgroup/system.slice/cajal_slurmstepd.scope/job_<id>/memory.peak`.
+  A longer `--time` is fine for long `NUM_FRAMES` runs (about 12 min per
+  97-frame window).
 - Output goes to `outputs/<name>_<timestamp>/`: one `<name>_seed<seed>.mp4`, `cmd.txt`,
   `prompt.txt`, `run.log` (includes `wall_seconds` and `peak_vram_mib`) and
   `vram.csv`. Slurm stdout goes to `logs/slurm/<name>_<jobid>.out`.
