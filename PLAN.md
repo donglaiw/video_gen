@@ -37,9 +37,8 @@ video_gen/
 └── logs/            # stdout/stderr, timing, peak VRAM per run
 ```
 
-`coding/` is gitignored in dw-os. Optionally `git init` inside `video_gen/`
-to track `scripts/`, `prompts/` and `README.md` only (ignore `env/`, `models/`,
-`outputs/` and `SkyReels-V2/`).
+`coding/` is gitignored in dw-os. `video_gen/` is its own git repo; see
+`.gitignore` for what stays out.
 
 ## Steps
 
@@ -65,7 +64,6 @@ Each step has a check. Don't move on until it passes.
 - Set `HF_HOME=video_gen/models/hf`.
 - Download **`Skywork/SkyReels-V2-DF-14B-540P` first** (69 GB). DF
   ("diffusion forcing") is the model that does long video.
-- Add `DF-14B-720P` later if 540P quality isn't enough.
 - **Check:** the download finishes and sizes match the HF listing.
 
 ### 4. Smoke test (1 GPU, short clip)
@@ -100,7 +98,9 @@ Each step has a check. Don't move on until it passes.
 - ComfyUI front end, reached only over an SSH tunnel. Never expose it publicly
   without strong authentication.
 
-## Open questions
+## Decisions
 
-- Is 540P acceptable, or go straight to 720P?
-- Should `video_gen/` get its own git repo for scripts and prompts?
+- 2026-09-26: **540P for now** (DF-14B-540P only). Revisit 720P after step 5.
+- 2026-09-26: `video_gen/` is its own git repo, remote
+  `github.com/donglaiw/video_gen`. It tracks the plan, scripts, prompts and
+  README only.
