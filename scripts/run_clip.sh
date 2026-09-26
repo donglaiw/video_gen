@@ -3,7 +3,7 @@
 # an end image or a prefix video to extend).
 #
 # usage: run_clip.sh <name> <prompt_file> <gpu> [--image X] [--end_image Y] [--video_path Z] [extra args]
-# output: outputs/<name>_<timestamp>/{*.mp4, cmd.txt, run.log, vram.csv}
+# output: outputs/<name>_<timestamp>/{<name>_seed<seed>.mp4, cmd.txt, prompt.txt, run.log, vram.csv}
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 NAME="$1"; PROMPT_FILE="$2"; GPU="$3"; shift 3
@@ -30,6 +30,9 @@ cd "$ROOT/SkyReels-V2"
 export PATH="$ROOT/env/bin:$PATH" CC="$ROOT/env/bin/gcc"   # triton/inductor need a C compiler
 START=$(date +%s)
 CUDA_VISIBLE_DEVICES="$GPU" HF_HOME="$ROOT/models/hf" "${CMD[@]}" 2>&1 | tee "$OUT/run.log"
+# SkyReels names the file after the first 100 prompt characters; keep one short-named copy.
+MP4=$(find "$OUT" -maxdepth 1 -name '*.mp4' -newer "$OUT/cmd.txt" | head -1)
+[ -n "$MP4" ] && mv "$MP4" "$OUT/${NAME}_seed${SEED:-42}.mp4"
 echo "wall_seconds=$(( $(date +%s) - START ))" | tee -a "$OUT/run.log"
 echo "peak_vram_mib=$(tail -n +2 "$OUT/vram.csv" | awk -F', ' '{gsub(/ MiB/,"",$2); if($2>m)m=$2} END{print m}')" | tee -a "$OUT/run.log"
 echo "out=$OUT"

@@ -35,7 +35,7 @@ scripts/submit_jobs.sh my_jobs.txt            # add --hold to queue without star
 
 - Each job gets 1 GPU (seen as device 0), 16 CPUs, 110 GB RAM and a 2 h limit.
   Two clips run at once and the rest wait in order.
-- Output goes to `outputs/<name>_<timestamp>/`: the mp4, `cmd.txt`,
+- Output goes to `outputs/<name>_<timestamp>/`: one `<name>_seed<seed>.mp4`, `cmd.txt`,
   `prompt.txt`, `run.log` (includes `wall_seconds` and `peak_vram_mib`) and
   `vram.csv`. Slurm stdout goes to `logs/slurm/<name>_<jobid>.out`.
 - Monitor with `squeue` and cancel your own job with `scancel <id>`. Slurm
