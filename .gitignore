@@ -1,0 +1,11 @@
+# Large or machine-local; see PLAN.md
+env/
+models/
+SkyReels-V2/
+outputs/
+logs/
+__pycache__/
+*.mp4
+*.safetensors
+*.pt
+*.pth
