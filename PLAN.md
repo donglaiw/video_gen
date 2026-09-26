@@ -1,6 +1,18 @@
 # SkyReels-V2 (Wan 14B) setup plan — cajal
 
-Drafted 2026-09-26. Status: **plan only, nothing installed yet.**
+Drafted 2026-09-26. Status: **steps 1–4 done** (env works, smoke test passed).
+Rebuild the env with `scripts/setup_env.sh`; `requirements.lock.txt` is the
+exact working set. Generate with `scripts/run_df.sh`.
+
+Smoke test (2026-09-26, GPU 1): text-to-video, `prompts/smoke_lake.txt`, 97
+frames at 960×544. Wall time 891 s including compile warmup, about 27 s per
+step, peak VRAM 62.6 GB.
+
+Fixes beyond upstream: torch 2.8 cu128 plus the prebuilt flash-attn 2.8.3
+wheel; diffusers 0.33.1 (newer versions need a newer transformers);
+opencv-headless (no libGL here); decord and moviepy 1.0.3 (imported but not
+in upstream's requirements); conda gcc/gxx in `env/` for `torch.compile`
+(the machine has no C compiler).
 
 ## Machine facts (checked 2026-09-26)
 
