@@ -9,3 +9,4 @@ __pycache__/
 *.safetensors
 *.pt
 *.pth
+.viewer_cache/

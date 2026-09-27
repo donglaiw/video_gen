@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>video_gen viewer</title>
+<style>
+:root {
+  --bg: #f6f6f4; --panel: #ffffff; --ink: #1d1d1b; --muted: #6b6b66; --line: #e3e2dd;
+  --accent: #2f6fdb; --accent-ink: #ffffff; --sel: #e8effc; --warn: #b3541e; --ok: #2e7d4f;
+  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #151514; --panel: #1e1e1c; --ink: #ecebe6; --muted: #9a9993; --line: #2f2f2c;
+          --accent: #6f9ef0; --accent-ink: #0d1320; --sel: #22304a; --warn: #e08a5a; --ok: #6cc08e; }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+  font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.app { display: grid; grid-template-columns: 320px 1fr; height: 100vh; }
+aside { border-right: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
+.head { padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.head h1 { font-size: 15px; margin: 0 0 8px; display: flex; justify-content: space-between; align-items: baseline; }
+.head h1 small { color: var(--muted); font-weight: 400; font-size: 12px; }
+input[type=search] { width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--bg); color: var(--ink); font: inherit; }
+.runs { overflow: auto; flex: 1; padding: 6px 0; }
+.run { padding: 6px 14px 8px; border-bottom: 1px solid var(--line); }
+.run-title { display: flex; gap: 6px; align-items: center; cursor: pointer; font-weight: 600; font-size: 13px; word-break: break-all; }
+.run-title:hover { color: var(--accent); }
+.run-sub { color: var(--muted); font-size: 12px; margin: 2px 0 4px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex: none; animation: pulse 1.4s infinite; }
+@keyframes pulse { 50% { opacity: .3; } }
+.vid { display: block; width: 100%; text-align: left; border: 0; background: none; color: var(--ink);
+  font: 13px var(--mono); padding: 4px 8px; border-radius: 5px; cursor: pointer; word-break: break-all; }
+.vid:hover { background: var(--bg); }
+.vid.sel { background: var(--sel); }
+.vid .m { color: var(--muted); font: 11px -apple-system, sans-serif; display: block; }
+.empty { color: var(--muted); font-size: 12px; padding: 2px 8px; }
+main { overflow: auto; padding: 16px 20px 40px; min-width: 0; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.bar h2 { font-size: 15px; margin: 0 auto 0 0; font-family: var(--mono); word-break: break-all; }
+button.b { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 6px;
+  padding: 4px 10px; font: inherit; font-size: 13px; cursor: pointer; }
+button.b:hover { border-color: var(--accent); }
+button.b.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+select { font: inherit; font-size: 13px; padding: 3px 4px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+.stage { background: #000; border-radius: 8px; overflow: hidden; display: flex; justify-content: center; }
+.stage video, .stage img { max-width: 100%; max-height: 72vh; display: block; }
+.grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); }
+.cell { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.cell video, .cell img { width: 100%; display: block; background: #000; }
+.cell .cap { font: 12px var(--mono); padding: 4px 8px; color: var(--muted); word-break: break-all; }
+.meta { display: flex; flex-wrap: wrap; gap: 4px 16px; color: var(--muted); font-size: 12px; margin: 8px 0 14px; }
+.meta b { color: var(--ink); font-weight: 500; }
+.warn { color: var(--warn); }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-top: 6px; }
+.tab { border: 0; background: none; color: var(--muted); padding: 6px 10px; cursor: pointer; font: inherit; border-bottom: 2px solid transparent; }
+.tab.on { color: var(--ink); border-bottom-color: var(--accent); }
+pre { background: var(--panel); border: 1px solid var(--line); border-top: 0; margin: 0; padding: 10px 12px;
+  font: 12px/1.5 var(--mono); white-space: pre-wrap; word-break: break-word; max-height: 40vh; overflow: auto; }
+.placeholder { color: var(--muted); padding: 60px 0; text-align: center; }
+.keys { color: var(--muted); font-size: 12px; margin-top: 18px; }
+kbd { font: 11px var(--mono); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; background: var(--panel); }
+@media (max-width: 760px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: 40vh 1fr; }
+  aside { border-right: 0; border-bottom: 1px solid var(--line); }
+  main { padding: 12px 16px 40px; }
+  .grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="head">
+      <h1>video_gen <small id="status">loading…</small></h1>
+      <input type="search" id="filter" placeholder="Filter runs / files">
+    </div>
+    <div class="runs" id="runs"></div>
+  </aside>
+  <main id="main"><div class="placeholder">Select a video on the left.</div></main>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+let runs = [], sel = { run: null, video: null }, view = 'single', tab = 'prompt';
+const opts = { loop: true, rate: 1 };
+
+const fmtSize = b => b > 1e9 ? (b / 1e9).toFixed(2) + ' GB' : b > 1e6 ? (b / 1e6).toFixed(1) + ' MB' : (b / 1e3).toFixed(0) + ' KB';
+const fmtTime = t => new Date(t * 1000).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+const fmtDur = d => d == null ? '?' : d < 60 ? d.toFixed(1) + ' s' : Math.floor(d / 60) + 'm' + Math.round(d % 60) + 's';
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const enc = p => p.split('/').map(encodeURIComponent).join('/');
+const src = v => (v.playable ? '/media/' : '/browser/') + enc(v.path);
+const isImg = v => v.path.toLowerCase().endsWith('.gif');
+
+async function load() {
+  try {
+    const r = await fetch('/api/runs');
+    const d = await r.json();
+    const sig = JSON.stringify(d.runs.map(r => [r.id, r.active, r.videos.map(v => v.path + v.size)]));
+    const changed = sig !== load.sig; load.sig = sig;
+    runs = d.runs;
+    const n = runs.reduce((a, r) => a + r.videos.length, 0);
+    $('#status').textContent = `${n} video${n === 1 ? '' : 's'} · ${runs.length} runs`;
+    if (changed) renderList();
+    if (!sel.run && location.hash) fromHash();
+  } catch (e) { $('#status').textContent = 'server unreachable'; }
+}
+
+function renderList() {
+  const f = $('#filter').value.toLowerCase();
+  const html = runs.map(r => {
+    const vids = r.videos.filter(v => !f || (r.id + '/' + v.name).toLowerCase().includes(f));
+    if (f && !vids.length && !r.id.toLowerCase().includes(f)) return '';
+    const items = vids.map(v => `<button class="vid ${sel.video === v.path ? 'sel' : ''}" data-run="${esc(r.id)}" data-path="${esc(v.path)}">
+        ${esc(v.name)}<span class="m">${fmtDur(v.duration)} · ${v.width ? v.width + '×' + v.height : ''} · ${fmtSize(v.size)}${v.playable ? '' : ' · <span class="warn">needs transcode</span>'}</span></button>`).join('');
+    return `<div class="run">
+      <div class="run-title" data-run="${esc(r.id)}">${r.active ? '<span class="dot" title="run.log updated in the last 2 min"></span>' : ''}${esc(r.id)}</div>
+      <div class="run-sub">${fmtTime(r.mtime)} · ${r.videos.length} video${r.videos.length === 1 ? '' : 's'}</div>
+      ${items || `<div class="empty">${r.active ? 'running… no video yet' : 'no videos'}</div>`}</div>`;
+  }).join('');
+  $('#runs').innerHTML = html || '<div class="placeholder">No runs under outputs/ or projects/.</div>';
+}
+
+function select(runId, path, push = true) {
+  const run = runs.find(r => r.id === runId);
+  if (!run) return;
+  sel = { run: runId, video: path || (run.videos[0] && run.videos[0].path) || null };
+  if (push) history.replaceState(null, '', '#' + encodeURIComponent(sel.run) + (sel.video ? '|' + encodeURIComponent(sel.video) : ''));
+  renderList(); renderMain();
+}
+function fromHash() {
+  const [r, v] = location.hash.slice(1).split('|').map(decodeURIComponent);
+  select(r, v, false);
+}
+
+function renderMain() {
+  const run = runs.find(r => r.id === sel.run);
+  if (!run) return;
+  const v = run.videos.find(x => x.path === sel.video);
+  const tools = `
+    <button class="b ${view === 'single' ? 'on' : ''}" data-view="single">Single</button>
+    <button class="b ${view === 'grid' ? 'on' : ''}" data-view="grid" title="All videos in this run, synced">Grid (${run.videos.length})</button>
+    <button class="b ${opts.loop ? 'on' : ''}" id="loop">Loop</button>
+    <select id="rate">${[0.25, 0.5, 1, 1.5, 2, 4].map(x => `<option value="${x}" ${x === opts.rate ? 'selected' : ''}>${x}×</option>`).join('')}</select>
+    ${v ? `<a class="b" href="/media/${enc(v.path)}" download style="text-decoration:none"><button class="b">Download</button></a>` : ''}`;
+  let body;
+  if (view === 'grid' && run.videos.length) {
+    body = `<div class="grid">${run.videos.map(x => `<div class="cell">${isImg(x) ? `<img src="${src(x)}">` :
+      `<video src="${src(x)}" muted playsinline preload="metadata" ${opts.loop ? 'loop' : ''}></video>`}
+      <div class="cap">${esc(x.name)}</div></div>`).join('')}</div>`;
+  } else if (v) {
+    body = `<div class="stage">${isImg(v) ? `<img src="${src(v)}">` :
+      `<video id="player" src="${src(v)}" controls autoplay playsinline ${opts.loop ? 'loop' : ''}></video>`}</div>
+      <div class="meta"><span><b>${v.width || '?'}×${v.height || '?'}</b></span><span><b>${v.fps || '?'}</b> fps</span>
+        <span><b>${fmtDur(v.duration)}</b></span><span>${v.codec || '?'}</span><span>${fmtSize(v.size)}</span><span>${fmtTime(v.mtime)}</span>
+        ${v.playable ? '' : '<span class="warn">not browser-native; playing an H.264 copy (first load transcodes)</span>'}</div>`;
+  } else {
+    body = `<div class="placeholder">${run.active ? 'Run in progress. No video written yet; this page refreshes every 10 s.' : 'No videos in this run.'}</div>`;
+  }
+  const files = run.files.length ? `<div class="tabs">${run.files.map(f => `<button class="tab ${f === tab ? 'on' : ''}" data-tab="${f}">${f}</button>`).join('')}</div><pre id="text">…</pre>` : '';
+  $('#main').innerHTML = `<div class="bar"><h2>${esc(v && view === 'single' ? v.path : run.id)}</h2>${tools}</div>${body}${files}
+    <div class="keys"><kbd>j</kbd>/<kbd>k</kbd> next/prev video · <kbd>space</kbd> play/pause · <kbd>,</kbd>/<kbd>.</kbd> step one frame · <kbd>g</kbd> grid · <kbd>l</kbd> loop</div>`;
+  applyRate();
+  if (view === 'grid') syncGrid();
+  if (run.files.length) { if (!run.files.includes(tab)) tab = run.files[0]; showText(run); }
+}
+
+async function showText(run) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === tab));
+  const tail = tab.endsWith('.log') ? '&tail=1' : '';
+  const r = await fetch('/api/text?path=' + encodeURIComponent(run.id + '/' + tab) + tail);
+  const el = $('#text'); if (!el) return;
+  el.textContent = r.ok ? (await r.text()) || '(empty)' : '(unreadable)';
+  if (tail) el.scrollTop = el.scrollHeight;
+}
+
+function vids() { return [...document.querySelectorAll('main video')]; }
+function applyRate() { vids().forEach(x => x.playbackRate = opts.rate); }
+function syncGrid() {
+  const vs = vids(); if (!vs.length) return;
+  Promise.all(vs.map(x => new Promise(res => x.readyState >= 2 ? res() : x.addEventListener('loadeddata', res, { once: true }))))
+    .then(() => vs.forEach(x => { x.currentTime = 0; x.play(); }));
+}
+function allVideos() { return runs.flatMap(r => r.videos.map(v => [r.id, v.path])); }
+function step(d) {
+  const list = allVideos(); if (!list.length) return;
+  let i = list.findIndex(([, p]) => p === sel.video);
+  i = Math.max(0, Math.min(list.length - 1, i + d));
+  select(...list[i]);
+  document.querySelector('.vid.sel')?.scrollIntoView({ block: 'nearest' });
+}
+function fps() { const r = runs.find(r => r.id === sel.run); const v = r?.videos.find(x => x.path === sel.video); return v?.fps || 24; }
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-path],[data-run],[data-view],[data-tab],#loop');
+  if (!t) return;
+  if (t.dataset.view) { view = t.dataset.view; renderMain(); }
+  else if (t.dataset.tab) { tab = t.dataset.tab; showText(runs.find(r => r.id === sel.run)); }
+  else if (t.id === 'loop') { opts.loop = !opts.loop; t.classList.toggle('on', opts.loop); vids().forEach(x => x.loop = opts.loop); }
+  else if (t.dataset.run) { if (!t.dataset.path) view = 'single'; select(t.dataset.run, t.dataset.path); }
+});
+document.addEventListener('change', e => { if (e.target.id === 'rate') { opts.rate = +e.target.value; applyRate(); } });
+$('#filter').addEventListener('input', renderList);
+document.addEventListener('keydown', e => {
+  if (e.target.matches('input, select')) return;
+  const vs = vids();
+  if (e.key === 'j') step(1);
+  else if (e.key === 'k') step(-1);
+  else if (e.key === 'g') { view = view === 'grid' ? 'single' : 'grid'; renderMain(); }
+  else if (e.key === 'l') $('#loop')?.click();
+  else if (e.key === ' ' && vs.length) { e.preventDefault(); const p = vs[0].paused; vs.forEach(x => p ? x.play() : x.pause()); }
+  else if ((e.key === ',' || e.key === '.') && vs.length) {
+    const dt = (e.key === '.' ? 1 : -1) / fps();
+    vs.forEach(x => { x.pause(); x.currentTime = Math.max(0, x.currentTime + dt); });
+  }
+});
+
+load();
+setInterval(load, 10000);
+</script>
+</body>
+</html>
