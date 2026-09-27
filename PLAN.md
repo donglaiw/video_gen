@@ -44,7 +44,8 @@ video_gen/
 ├── env/             # conda env (created with -p, Python 3.11)
 ├── models/  ->      /data/donglai/video_gen/models   (weights + HF cache)
 ├── scripts/         # our wrappers: smoke test, t2v, long video, 2-GPU
-├── prompts/         # prompt text files
+├── viewer/          # localhost video browser (ssh -L to the Mac)
+├── prompts/         # prompt text files (machine-local, not tracked)
 ├── outputs/         # generated mp4s, one subfolder per run, plus the command
 └── logs/            # stdout/stderr, timing, peak VRAM per run
 ```
@@ -115,4 +116,6 @@ Each step has a check. Don't move on until it passes.
 - 2026-09-26: **540P for now** (DF-14B-540P only). Revisit 720P after step 5.
 - 2026-09-26: `video_gen/` is its own git repo, remote
   `github.com/donglaiw/video_gen`. It tracks the plan, scripts, prompts and
-  README only.
+  README only. *(Prompts dropped 2026-09-27, see below.)*
+- 2026-09-27: **`prompts/` is no longer tracked** (gitignored, like
+  `projects/`). The repo tracks the plan, scripts, viewer and README only.
